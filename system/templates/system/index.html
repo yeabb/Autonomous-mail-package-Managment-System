@@ -1,14 +1,8 @@
-<!DOCTYPE html>
-<html lang="en" dir="ltr">
-  <head>
-    <meta charset="utf-8">
-    <title></title>
-  </head>
-  <body>
+{% extends 'system/base.html' %}
+{% block content %}
     {% if user.is_authenticated %}
-    Welcome, {{ user.username }}.
+    <h4 class="text-center">Welcome {{ user.username }}! You are now logged in.</h4>
     {% else %}
-    Please sign in.
+    <h4 class="text-center">Thank you for using our service. Please come back soon!</h4>
     {% endif %}
-  </body>
-</html>
+{% endblock %}

@@ -1,0 +1,11 @@
+<form action="verify_email" method="POST">
+    {% csrf_token %}
+    <input type="number" name="code" placeholder="verification code"/>
+    <button>verify</button>
+</form>
+
+<div>
+    {%for message in messages%}
+    <h3>{{message}}</h3>
+    {% endfor %}
+</div>

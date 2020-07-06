@@ -1,8 +1,0 @@
-{% extends 'system/base.html' %}
-{% block content %}
-    {% if user.is_authenticated %}
-    <h4 class="text-center">Welcome {{ user.username }}! You are now logged in.</h4>
-    {% else %}
-    <h4 class="text-center">Thank you for using our service. Please come back soon!</h4>
-    {% endif %}
-{% endblock %}

@@ -1,0 +1,12 @@
+<form action="open_box" method="POST">
+    {% csrf_token %}
+    <input name="email"type="email" placeholder="Email"/> <br/>
+    <input name="pin" type="password" placeholder="Access Pin"/> <br/>
+    <button>Access Box</button>
+</form>
+
+<div>
+    {%for message in messages%}
+    <h3>{{message}}</h3>
+    {% endfor %}
+</div>

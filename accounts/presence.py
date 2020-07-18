@@ -1,0 +1,2 @@
+class Presence:
+    val:bool

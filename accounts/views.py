@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.contrib.auth.models import User, auth
 import socket
 import qrcode
 import smtplib
@@ -8,21 +9,24 @@ import os
 import imghdr
 import random
 from email.message import EmailMessage
-
-code=None
+from .models import *
+from .presence import Presence
 # Create your views here.
-def signup(request):
-    return render(request,"signup.html")
+  
 
-def access(request):
-    return render(request,"access.html")
 
-def register(request):
+def signupForm(request):
+    return render(request,"signupForm.html")
+
+
+
+
+def contact_email(request):
     if (request.method=="POST"):
-        firstName=request.POST["FirstName"]
-        lastName=request.POST["LastName"]
-        email=request.POST["Email"]
-        tel=request.POST["Phone_Number"]
+        first_name=request.POST["first_name"]
+        last_name=request.POST["last_name"]
+        email=request.POST["email"]
+        
 
 
         
@@ -39,7 +43,10 @@ def register(request):
         imgName=str(email)+".jpg"
         img.save(imgName)
 
-        code=random.randint(1,1000000)
+        
+        
+        code=random.randint(0,1000000)
+        
 
 
         EMAIL_ADDRESS = os.environ.get('EMAIL_USER')
@@ -57,17 +64,120 @@ def register(request):
         <!DOCTYPE html>
         <html>
             <body style="display:block">
-                <h1 style="color:SlateGray;">Confirm your email address</h1>
+                <h1 style="color:SlateGray;">Confirm your email address and screenshot the QRCode</h1>
                 <p>
                     There’s a quick step you need to complete before creating your account. Please confirm this is the right address to use for your new account.
                 </p>
                 <br/>
                 <p>
-                    Please enter this verification code to get started on our plateform: <h1 style="color:SlateGray;">{code}</h1>
+                    Please enter this verification code to get started and take a screenshot of the QRCode attached below(you will need it):
+                     <h1 style="color:SlateGray;">{code}</h1>
+                    
                 </p>
+                
+            </body>
+        </html>
+        """.format(**locals()), subtype='html')
+
+        with open(imgName, "rb") as f:
+            file_data= f.read()
+            file_name=f.name
+            file_type=imghdr.what(file_name)
+        
+
+        msg.add_attachment(file_data, maintype="image", subtype="file_type", filename=file_name)
+
+
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+            smtp.send_message(msg)
+
+        #save the name,email and code into tempo data base
+
+
+        os.remove(imgName) 	#to remove the QR image after it has been send through email
+        print("File Removed!")
+        return render(request, "email_verification.html",{"email":email})
+    else:
+        return render(request, "signup.html")
+
+
+
+def verify_email(request):
+    if (request.method=="POST"):
+        email=request.POST["email"]
+        veri_code=request.POST["veri_code"]
+       
+        #open the tempo data base and access email and code
+        
+        # if(veri_code==code):
+        return render(request, "finishup_registration.html",{"email":email})
+        # else:
+        #     messages.info(request,"Code didn't match, please try again")
+        #     return render(request, "email_verification.html")
+
+
+
+
+def email_reprompt(request):
+    if (request.method=="POST"):
+        email=request.POST["email_val"]
+        return render(request, "email_reprompt.html",{"email":email})
+
+
+
+
+
+def sendEmailAgain(request):
+    if (request.method=="POST"):
+        email=request.POST["confirm_email"]
+    
+        qr=qrcode.QRCode(
+                version=1,
+                box_size=15,
+                border=5
+        )
+
+        
+        data = str(email)
+        qr.add_data(data)
+        qr.make(fit=True)
+        img = qr.make_image(fill='black', back_color='white')
+        imgName=str(email)+".jpg"
+        img.save(imgName)
+
+        
+        
+        code=random.randint(0,1000000)
+        
+
+
+        EMAIL_ADDRESS = os.environ.get('EMAIL_USER')
+        EMAIL_PASSWORD = os.environ.get('EMAIL_PASS')
+
+
+        msg = EmailMessage()
+        msg['Subject'] = "Verification code"
+        msg['From'] = EMAIL_ADDRESS
+        msg['To'] = str(email)
+
+        #msg.set_content('your code is'+" "+str(code))
+
+        msg.add_alternative("""\
+        <!DOCTYPE html>
+        <html>
+            <body style="display:block">
+                <h1 style="color:SlateGray;">Confirm your email address and screenshot the QRCode</h1>
                 <p>
-                    After you verify your email please take a screenshot of the QRCode attached below(you will need it)
+                    There’s a quick step you need to complete before creating your account. Please confirm this is the right address to use for your new account.
                 </p>
+                <br/>
+                <p>
+                    Please enter this verification code to get started and take a screenshot of the QRCode attached below(you will need it):
+                        <h1 style="color:SlateGray;">{code}</h1>
+                    
+                </p>
+                
             </body>
         </html>
         """.format(**locals()), subtype='html')
@@ -86,26 +196,50 @@ def register(request):
             smtp.send_message(msg)
 
         os.remove(imgName) 	#to remove the QR image after it has been send through email
-        print("File Removed!")
-        return render(request, "email_verification.html")
-    else:
-        return render(request, "signup.html")
+        return render(request, "email_verification.html",{"email":email})
 
 
 
-def verify_email(request):
+
+
+
+def finishup_registration(request):
     if (request.method=="POST"):
-        veri_code=request.POST["code"]
-        if(veri_code==code):
-            return render(request, "after_signup.html")
-        else:
-            messages.info(request,"Code didn't match, please try again")
-            return render(request, "email_verification.html")
+        email=request.POST["email"]
+        password1=request.POST["password1"]
+        password2=request.POST["password2"]
+        #agree_term=request.POST["agree_term"]
+
+
+        #access the tempo database and fetch the first and lastname 
+
+        #save each of the user info to the main user table
+
+
+
+
+def login(request):
+    return render(request,"login.html")
+
+
+
+
+
+def personalAccount(request):
+    if (request.method=="POST"):
+        email=request.POST["email"]
+        password=request.POST["password"]
+        if (email=="mekonnentadesse999@gmail.com"):
+            presence=Presence()
+            presence.val=True
+            return render(request,"after_login.html",{"presence":presence})
+
+
 
 
 def open_box(request):
     if (request.method=="POST"):
-        email=request.POST["email"]
+        email=request.POST["Email"]
         pin=request.POST["pin"]
         
         if(email=="ybiru@conncoll.edu"):
@@ -121,7 +255,20 @@ def open_box(request):
 
             return render(request, "after_access.html",{"msg":msg})
         else:
-            messages.info(request,"invalid credentials")
+            messages.info(request,"invalid credentials! Please double-check and try again.")
             return render(request, "access.html")
     else:
         return render(request, "access.html")
+
+
+
+
+
+
+    
+
+
+
+
+
+

@@ -24,6 +24,13 @@
                     <form action="contact_email" method="POST" id="signup-form" class="signup-form">
                         {% csrf_token %}
                         <h2 class="form-title">Create account</h2>
+                        
+                        <p style="color:red;">
+                            {%for message in messages%}
+                            {{message}}
+                            {% endfor %}
+                        </p>
+                        
                         <div class="form-group">
                             <input type="text" class="form-input" name="first_name" id="name" placeholder="First Name"/>
                         </div>

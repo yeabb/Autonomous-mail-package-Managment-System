@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Sign Up Form</title>
+    <title>Staff personal account</title>
 
     <!-- Font Icon -->
     <link rel="stylesheet" href="{% static 'fonts/material-icon/css/material-design-iconic-font.min.css' %}">
@@ -21,35 +21,34 @@
             <!-- <img src="images/signup-bg.jpg" alt=""> -->
             <div class="container">
                 <div class="signup-content">
-                    <form action="contact_email" method="POST" id="signup-form" class="signup-form">
+                    <form action="addPackage" method="POST" id="signup-form" class="signup-form">
                         {% csrf_token %}
-                        <h2 class="form-title">Create account</h2>
-                        
+                        <h2 class="form-title">Who is the reciepient of the package?</h2>
                         <p style="color:red;">
                             {%for message in messages%}
                             {{message}}
                             {% endfor %}
                         </p>
-                        
                         <div class="form-group">
-                            <input type="text" class="form-input" name="first_name" id="name" placeholder="First Name"/>
+                            <input type="client_email" class="form-input" name="client_email" id="client_email" placeholder="Client Email"/>
+                            <input type="hidden" class="form-input" name="email" id="email" value={{email}}>
                         </div>
                         <div class="form-group">
-                            <input type="text" class="form-input" name="last_name" id="name" placeholder="Last Name"/>
+                            <input type="submit" name="submit" id="submit" class="form-submit" value="Verify Email"/>
                         </div>
-                        <div class="form-group">
-                            <input type="email" class="form-input" name="email" id="email" placeholder="Email"/>
-                        </div>
-                        <div class="form-group">
-                            <input type="text" class="form-input" name="username" id="username" placeholder="Username"/>
-                        </div>
-                        <div class="form-group">
-                            <input type="submit" name="submit" id="submit" class="form-submit" value="Sign up"/>
-                        </div>
+                    
                     </form>
+                      
+                    <form action="staffBoxAccess" method="POST">
+                        {% csrf_token %}
                     <p class="loginhere">
-                        Already have an account ? <a href="login" class="loginhere-link">Log in </a>
-                    </p>  
+                        
+                        <input type="hidden" class="form-input" name="email" id="email" value={{email}}>
+                        <input type="hidden" class="form-input" name="presence" id="presence" value={{presence}}>
+                        You wanna access your box? <button>Access Box</button>
+                    </p>
+                    </form>
+
                 </div>
             </div>
         </section>
@@ -61,5 +60,3 @@
     <script src="js/main.js"></script>
 </body>
 </html>
-
-<!--<span toggle="#password" class="zmdi zmdi-eye field-icon toggle-password"></span>-->

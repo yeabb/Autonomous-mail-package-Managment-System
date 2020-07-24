@@ -11,4 +11,6 @@ urlpatterns = [
     path("sendEmailAgain", views.sendEmailAgain, name="sendEmailAgain"),
     path("email_reprompt", views.email_reprompt, name="email_reprompt"),
     path("finishup_registration", views.finishup_registration, name="finishup_registration"),
+    path("staffBoxAccess", views.staffBoxAccess, name="staffBoxAccess"),
+    path("addPackage", views.addPackage, name="addPackage"),
 ]

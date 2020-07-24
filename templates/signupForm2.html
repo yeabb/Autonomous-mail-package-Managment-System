@@ -32,17 +32,28 @@
                         </p>
                         
                         <div class="form-group">
-                            <input type="text" class="form-input" name="first_name" id="name" placeholder="First Name"/>
+                            <input type="text" class="form-input" name="first_name" id="name" value={{first_name}} placeholder="First Name"/>
                         </div>
                         <div class="form-group">
-                            <input type="text" class="form-input" name="last_name" id="name" placeholder="Last Name"/>
+                            <input type="text" class="form-input" name="last_name" id="name" value={{last_name}} placeholder="Last Name"/>
                         </div>
-                        <div class="form-group">
-                            <input type="email" class="form-input" name="email" id="email" placeholder="Email"/>
-                        </div>
-                        <div class="form-group">
-                            <input type="text" class="form-input" name="username" id="username" placeholder="Username"/>
-                        </div>
+
+                        {% if decide.dec %}
+                            <div class="form-group">
+                                <input type="email" class="form-input" name="email" id="email" placeholder="Email"/>
+                            </div>
+                            <div class="form-group">
+                                <input type="text" class="form-input" name="username" id="username" value={{username}} placeholder="Username"/>
+                            </div>
+
+                        {% else %}
+                            <div class="form-group">
+                                <input type="email" class="form-input" name="email" id="email" value={{email}} placeholder="Email"/>
+                            </div>
+                            <div class="form-group">
+                                <input type="text" class="form-input" name="username" id="username" placeholder="Username"/>
+                            </div>
+                        {% endif %}
                         <div class="form-group">
                             <input type="submit" name="submit" id="submit" class="form-submit" value="Sign up"/>
                         </div>

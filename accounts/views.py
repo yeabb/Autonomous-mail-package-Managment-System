@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.models import User, auth
+from django.contrib.auth import authenticate
 import socket
 import qrcode
 import smtplib
@@ -28,11 +29,18 @@ def contact_email(request):
         first_name=request.POST["first_name"]
         last_name=request.POST["last_name"]
         email=request.POST["email"]
+        username=request.POST["username"]
+
+        decide=Presence()
         
         if(User.objects.filter(email=email).exists()):
-            messages.info(request,"email adress already taken!")
-            return render(request, "signupForm.html")
-
+            decide.dec=True
+            messages.info(request,"email already taken! Please try again!")
+            return render(request, "signupForm2.html",{"username":username, "first_name":first_name, "last_name":last_name,"decide":decide})
+        elif(User.objects.filter(username=username).exists()):
+            decide.dec=False
+            messages.info(request,"username already taken! Please try again!")
+            return render(request, "signupForm2.html",{"email":email, "username":username, "first_name":first_name, "last_name":last_name, "decide":decide})
         else:
             code=random.randint(0,1000000)
             if(BeforeEmailVerification.objects.filter(email=email).exists()):
@@ -43,6 +51,7 @@ def contact_email(request):
                 
                 tempo_db.first_name=first_name
                 tempo_db.last_name=last_name
+                tempo_db.username=username
                 tempo_db.code=code
                 tempo_db.initiation_time=initiation_time
                 tempo_db.expire_time=expire_time
@@ -51,7 +60,7 @@ def contact_email(request):
                 initiation_time=datetime.datetime.now(tz=pytz.UTC)
                 tdelta=datetime.timedelta(hours=2)
                 expire_time=initiation_time+tdelta
-                tempo_db=BeforeEmailVerification(first_name=first_name, last_name=last_name, email=email, code=code, initiation_time=initiation_time, expire_time=expire_time)
+                tempo_db=BeforeEmailVerification(first_name=first_name, last_name=last_name, username=username, email=email, code=code, initiation_time=initiation_time, expire_time=expire_time)
                 tempo_db.save() #save the name, email, code, initiation_time and expire-time into tempo data base
             
             qr = qrcode.QRCode(
@@ -294,7 +303,8 @@ def finishup_registration(request):
                 tempo_db=BeforeEmailVerification.objects.filter(email=email).first()
                 first_name=tempo_db.first_name
                 last_name=tempo_db.last_name
-                user=User.objects.create_user(first_name=first_name, username="mekoda", last_name=last_name, email=email, password=password1)
+                username=tempo_db.username
+                user=User.objects.create_user(first_name=first_name, username=username, last_name=last_name, email=email, password=password1)
                 user.save()
                 tempo_db.delete()
                 
@@ -322,36 +332,213 @@ def personalAccount(request):
     if (request.method=="POST"):
         email=request.POST["email"]
         password=request.POST["password"]
-        if (email=="mekonnentadesse999@gmail.com"):
+        if (User.objects.filter(email=email).exists()):
+            customer=User.objects.filter(email=email).first()
+            username=customer.username
+            user=auth.authenticate(username=username,password=password)
             presence=Presence()
-            presence.val=True
-            return render(request,"after_login.html",{"presence":presence})
+            if user is not None:
+                if(customer.is_staff):
+                    auth.login(request, user)
+                    if(Parcel.objects.filter(email=email).exists()):
+                        presence.val=True
+                    else:
+                        presence.val=False
+                    return render(request,"after_login_staff.html",{"presence":presence, "email":email})
+                else:
+                    auth.login(request, user)
+                    if(Parcel.objects.filter(email=email).exists()):
+                        presence.val=True
+                    else:
+                        presence.val=False
+                    return render(request,"after_login.html",{"presence":presence, "email":email})
+            else:
+                messages.info(request,"Wrong Password! Please try again")   
+                return render(request,"login.html")
+            
+            
+        else:
+            messages.info(request,"User could not be found! Please try again") 
+            return render(request,"login.html")
 
 
+def addPackage(requset):
+    if (request.method=="POST"):
+        email=request.POST["email"]
+        client_email=request.POST["client_email"]
+        pres=request.POST["presence"]
+        presence=Presence()
+        presence.val=pres
+        if(User.objects.filter(email=client_email).exists()):
+            if(Parcel.objects.filter(email=client_email).exists()):
+                parcel=Parcel.objects.filter(email=client_email).first()
+                if(BoxList.objects.filter(available=True).exists()):
+                    boxList=BoxList.objects.filter(available=True).first()
+                    boxNum=boxList.box_num    #get the box number that is free
+                    
+                    #open the box to enter the package and wait untill it's closed 
+                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    s.connect(("192.168.1.252", 8000))
+                    s.send(bytes(boxNum,"utf-8"))
+                    msg = s.recv(1024).decode("utf-8")
+                                                                         
+                    
+                    totalBoxNum=parcel.box_num+","+str(boxNum)
+                    parcel.box_num=totalBoxNum      #add the new box number into the parcel table
+
+                    initiation_time=datetime.datetime.now(tz=pytz.UTC)
+                    
+                    boxList.available=False
+                    boxList.associated_customer=client_email
+                    boxList.filledTime=initiation_time
+                    
+                    ##email the client
+                    data = str(client_email)
+
+                    
+                    EMAIL_ADDRESS = os.environ.get('EMAIL_USER')
+                    EMAIL_PASSWORD = os.environ.get('EMAIL_PASS')
+
+
+                    msg = EmailMessage()
+                    msg['Subject'] = "Verification code"
+                    msg['From'] = EMAIL_ADDRESS
+                    msg['To'] = str(client_email)
+
+
+                    msg.add_alternative("""\
+                    <!DOCTYPE html>
+                    <html>
+                        <body style="display:block">
+                            <h1 style="color:SlateGray;">You have new package in your box</h1>
+                            <p>
+                                your new package have arrived safely and we have placed it into you box, you can come and fetch it at anytime that works for you.
+                            </p>
+                            <br/>
+                            <p>
+                                please note that you already have another package in one of our boxes and you dont need a new access code to retrieve this new package. as soon as you enter the previous access code you will gain access to all of your packages at the same time.
+                            </p>
+                            
+                        </body>
+                    </html>
+                    """.format(**locals()), subtype='html')
+
+                    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+                        smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+                        smtp.send_message(msg)
+
+
+
+                    messages.info(request,"package was succesfully placed to"+" "+str(client_email))
+                    return render(request, "after_login_staff.html",{"email":email, "presence":presence})
+                else:
+                    messages.info(request,"All of the boxes are taken at the moment. Please try again!"+" "+str(client_email))
+                    return render(request, "after_login_staff.html",{"email":email, "presence":presence})
+            else:
+                if(BoxList.objects.filter(available=True).exists()):
+                    boxList=BoxList.objects.filter(available=True).first()
+                    boxNum=boxList.box_num    #get the box number that is free
+                    
+                    #open the box to enter the package and wait untill it's closed 
+                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    s.connect(("192.168.1.252", 8000))
+                    s.send(bytes(boxNum,"utf-8"))
+                    msg = s.recv(1024).decode("utf-8")
+
+                    #create a new row in the parcel table
+
+                    access_code=random.randint(0,1000000)
+                    initiation_time=datetime.datetime.now(tz=pytz.UTC)
+                    parcel=Parcel.objects.create_user(email=client_email, box_num=boxNum, access_code=access_code, entrance_time=initiation_time)  #create a new row in the parcel table
+                    parcel.save()
+
+                    boxList.available=False
+                    boxList.associated_customer=client_email
+                    boxList.filledTime=initiation_time
+                    
+                    ##email the client and provide access code
+                    data = str(client_email)
+
+                    
+                    EMAIL_ADDRESS = os.environ.get('EMAIL_USER')
+                    EMAIL_PASSWORD = os.environ.get('EMAIL_PASS')
+
+
+                    msg = EmailMessage()
+                    msg['Subject'] = "Verification code"
+                    msg['From'] = EMAIL_ADDRESS
+                    msg['To'] = str(client_email)
+
+
+                    msg.add_alternative("""\
+                    <!DOCTYPE html>
+                    <html>
+                        <body style="display:block">
+                            <h1 style="color:SlateGray;">You have new package in your box</h1>
+                            <p>
+                                Your new package have arrived safely and we have placed it into your box, you can come and fetch it at anytime that works for you.
+                            </p>
+                            <br/>
+                            <p>
+                                Please enter this Access code to gain acess to your package:
+                                    <h1 style="color:SlateGray;">{access_code}</h1>
+                               
+                            </p>
+                            
+                        </body>
+                    </html>
+                    """.format(**locals()), subtype='html')
+
+
+                    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+                        smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+                        smtp.send_message(msg)
+
+
+                    
+                    messages.info(request,"package succesfully placed to"+" "+str(client_email))
+                    return render(request, "after_login_staff.html",{"presence":presence})
+                else:
+                    messages.info(request,"All of the boxes are taken at the moment. Please try again!"+" "+str(client_email))
+                    return render(request, "after_login_staff.html",{"email":email, "presence":presence})
+       
+        else:
+            messages.info(request,str(client_email)+" "+"could not be found")
+            return render(request, "after_login_staff.html",{"presence":presence})
+
+
+
+
+def staffBoxAccess(request):
+    if (request.method=="POST"):
+        email=request.POST["email"]
+        pres=request.POST["presence"]
+        presence=Presence()
+        presence.val=pres
+        return render(request,"after_login.html",{"email":email, "presence":presence})
 
 
 def open_box(request):
     if (request.method=="POST"):
-        email=request.POST["Email"]
+        email=request.POST["email"]
         pin=request.POST["pin"]
         
-        if(email=="ybiru@conncoll.edu"):
-
-            
-
+        
+        parcel=Parcel.objects.filter(email=email).first()
+        if(parcel.pin==pin):
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect(("192.168.1.252", 8000))
-            s.send(bytes("wassup","utf-8"))
+            s.send(bytes(parcel.box_num,"utf-8"))
 
             msg = s.recv(1024).decode("utf-8")
+            messages.info(request,"Box was succesfully opened.")
+            return render(request, "after_access.html")
 
-
-            return render(request, "after_access.html",{"msg":msg})
         else:
             messages.info(request,"invalid credentials! Please double-check and try again.")
-            return render(request, "access.html")
+            return render(request, "after_login.html",{"email":email})
     else:
-        return render(request, "access.html")
+        return render(request, "after_login.html",{"email":email})
 
 
 

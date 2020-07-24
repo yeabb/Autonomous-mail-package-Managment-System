@@ -30,10 +30,21 @@ def contact_email(request):
         last_name=request.POST["last_name"]
         email=request.POST["email"]
         username=request.POST["username"]
-
         decide=Presence()
         
         if(User.objects.filter(email=email).exists()):
+            # for i in range(1,9):
+            #     box=BoxList.objects.filter(available=True).first()
+            #     box.delete()
+
+            # for i in range(1,9):
+            # box=BoxList(box_num=1, available=True, associated_customer=email, filledTime=datetime.datetime.now(tz=pytz.UTC))
+            # box.save()
+            
+            # x=False
+            # box=BoxList.objects.filter(box_num=1).first()
+            # box.box_num=2
+
             decide.dec=True
             messages.info(request,"email already taken! Please try again!")
             return render(request, "signupForm2.html",{"username":username, "first_name":first_name, "last_name":last_name,"decide":decide})
@@ -362,7 +373,7 @@ def personalAccount(request):
             return render(request,"login.html")
 
 
-def addPackage(requset):
+def addPackage(request):
     if (request.method=="POST"):
         email=request.POST["email"]
         client_email=request.POST["client_email"]
@@ -378,8 +389,8 @@ def addPackage(requset):
                     
                     #open the box to enter the package and wait untill it's closed 
                     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    s.connect(("192.168.1.252", 8000))
-                    s.send(bytes(boxNum,"utf-8"))
+                    s.connect(("192.168.1.194", 8000))
+                    s.send(bytes(str(boxNum),"utf-8"))
                     msg = s.recv(1024).decode("utf-8")
                                                                          
                     
@@ -441,15 +452,15 @@ def addPackage(requset):
                     
                     #open the box to enter the package and wait untill it's closed 
                     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    s.connect(("192.168.1.252", 8000))
-                    s.send(bytes(boxNum,"utf-8"))
+                    s.connect(("192.168.1.194", 8000))
+                    s.send(bytes(str(boxNum),"utf-8"))
                     msg = s.recv(1024).decode("utf-8")
 
                     #create a new row in the parcel table
 
                     access_code=random.randint(0,1000000)
                     initiation_time=datetime.datetime.now(tz=pytz.UTC)
-                    parcel=Parcel.objects.create_user(email=client_email, box_num=boxNum, access_code=access_code, entrance_time=initiation_time)  #create a new row in the parcel table
+                    parcel=Parcel(email=client_email, box_num=boxNum, access_code=access_code, entrance_time=initiation_time)  #create a new row in the parcel table
                     parcel.save()
 
                     boxList.available=False
@@ -525,9 +536,9 @@ def open_box(request):
         
         
         parcel=Parcel.objects.filter(email=email).first()
-        if(parcel.pin==pin):
+        if(parcel.access_code==pin):
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect(("192.168.1.252", 8000))
+            s.connect(("192.168.1.194", 8000))
             s.send(bytes(parcel.box_num,"utf-8"))
 
             msg = s.recv(1024).decode("utf-8")

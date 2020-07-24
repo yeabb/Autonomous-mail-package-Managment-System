@@ -19,6 +19,6 @@ class Parcel(models.Model):
 
 class BoxList(models.Model):
     box_num=models.IntegerField()
-    available=models.BooleanField()
-    associeted_customer=models.EmailField()
-    filledTime=models.DateTimeField()
+    available=models.BooleanField(default=True)
+    associated_customer=models.EmailField(null=True, blank=True)
+    filledTime=models.DateTimeField(null=True, blank=True)

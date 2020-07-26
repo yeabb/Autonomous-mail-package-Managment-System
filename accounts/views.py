@@ -34,16 +34,18 @@ def contact_email(request):
         
         if(User.objects.filter(email=email).exists()):
             # for i in range(1,9):
-            #     box=BoxList.objects.filter(available=True).first()
-            #     box.delete()
+            # box=BoxList.objects.filter(available=True).first()
+            # box.associated_customer=None
+            # box.save()
 
             # for i in range(1,9):
-            # box=BoxList(box_num=1, available=True, associated_customer=email, filledTime=datetime.datetime.now(tz=pytz.UTC))
-            # box.save()
+            #     # initiation_time=datetime.datetime.now(tz=pytz.UTC)
+            #     box=BoxList(box_num=i)
+            #     box.save()
             
             # x=False
             # box=BoxList.objects.filter(box_num=1).first()
-            # box.box_num=2
+            # box.delete()
 
             decide.dec=True
             messages.info(request,"email already taken! Please try again!")
@@ -385,7 +387,7 @@ def addPackage(request):
                 parcel=Parcel.objects.filter(email=client_email).first()
                 if(BoxList.objects.filter(available=True).exists()):
                     boxList=BoxList.objects.filter(available=True).first()
-                    boxNum=boxList.box_num    #get the box number that is free
+                    boxNum=boxList.box_num    #get the first box number that is free
                     
                     #open the box to enter the package and wait untill it's closed 
                     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -396,12 +398,15 @@ def addPackage(request):
                     
                     totalBoxNum=parcel.box_num+","+str(boxNum)
                     parcel.box_num=totalBoxNum      #add the new box number into the parcel table
+                    parcel.save()       #save the newly added box number
 
                     initiation_time=datetime.datetime.now(tz=pytz.UTC)
-                    
+
                     boxList.available=False
                     boxList.associated_customer=client_email
                     boxList.filledTime=initiation_time
+                    boxList.save()          #save the newly updated BoxList object
+                    
                     
                     ##email the client
                     data = str(client_email)
@@ -466,6 +471,7 @@ def addPackage(request):
                     boxList.available=False
                     boxList.associated_customer=client_email
                     boxList.filledTime=initiation_time
+                    boxList.save()
                     
                     ##email the client and provide access code
                     data = str(client_email)
@@ -533,7 +539,6 @@ def open_box(request):
     if (request.method=="POST"):
         email=request.POST["email"]
         pin=request.POST["pin"]
-        
         
         parcel=Parcel.objects.filter(email=email).first()
         if(parcel.access_code==pin):

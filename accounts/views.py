@@ -34,8 +34,9 @@ def contact_email(request):
         
         if(User.objects.filter(email=email).exists()):
             # for i in range(1,9):
-            # box=BoxList.objects.filter(available=True).first()
+            # box=BoxList.objects.filter(available=False).first()
             # box.associated_customer=None
+            # box.available=True
             # box.save()
 
             # for i in range(1,9):
@@ -541,14 +542,30 @@ def open_box(request):
         pin=request.POST["pin"]
         
         parcel=Parcel.objects.filter(email=email).first()
-        if(parcel.access_code==pin):
+        if(int(parcel.access_code)==int(pin)):
+            box_num=parcel.box_num
+
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect(("192.168.1.194", 8000))
-            s.send(bytes(parcel.box_num,"utf-8"))
+            s.send(bytes(box_num,"utf-8"))
 
-            msg = s.recv(1024).decode("utf-8")
+            
+            num = s.recv(1024).decode("utf-8")
+            box_num_list=num.split(",")
+            
+           
+
+            for i in(box_num_list):
+                boxList=BoxList.objects.filter(box_num=int(i)).first()
+                boxList.available=True
+                boxList.associated_customer=None
+                boxList.filledTime=None
+                boxList.save()
+
+            parcel.delete()
+            
             messages.info(request,"Box was succesfully opened.")
-            return render(request, "after_access.html")
+            return render(request, "after_access.html",{"num":num})
 
         else:
             messages.info(request,"invalid credentials! Please double-check and try again.")

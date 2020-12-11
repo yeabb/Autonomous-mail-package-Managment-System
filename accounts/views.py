@@ -33,6 +33,8 @@ def contact_email(request):
         decide=Presence()
         
         if(User.objects.filter(email=email).exists()):
+            # parcel=Parcel.objects.filter(email=email).first()
+            # parcel.delete()
             # for i in range(1,9):
             # box=BoxList.objects.filter(available=False).first()
             # box.associated_customer=None
@@ -392,11 +394,11 @@ def addPackage(request):
                     
                     #open the box to enter the package and wait untill it's closed 
                     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    s.connect(("192.168.1.194", 8000))
+                    s.connect(("136.244.194.178", 8000))
                     s.send(bytes(str(boxNum),"utf-8"))
                     msg = s.recv(1024).decode("utf-8")
                                                                          
-                    
+                    #192.168.1.194
                     totalBoxNum=parcel.box_num+","+str(boxNum)
                     parcel.box_num=totalBoxNum      #add the new box number into the parcel table
                     parcel.save()       #save the newly added box number
@@ -458,7 +460,7 @@ def addPackage(request):
                     
                     #open the box to enter the package and wait untill it's closed 
                     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    s.connect(("192.168.1.194", 8000))
+                    s.connect(("136.244.194.178", 8000))
                     s.send(bytes(str(boxNum),"utf-8"))
                     msg = s.recv(1024).decode("utf-8")
 
@@ -546,7 +548,7 @@ def open_box(request):
             box_num=parcel.box_num
 
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect(("192.168.1.194", 8000))
+            s.connect(("136.244.194.178", 8000))
             s.send(bytes(box_num,"utf-8"))
 
             
@@ -555,8 +557,8 @@ def open_box(request):
             
            
 
-            for i in(box_num_list):
-                boxList=BoxList.objects.filter(box_num=int(i)).first()
+            for i in(0,len(box_num_list)-2):
+                boxList=BoxList.objects.filter(box_num=int(box_num_list[i])).first()
                 boxList.available=True
                 boxList.associated_customer=None
                 boxList.filledTime=None
@@ -568,12 +570,10 @@ def open_box(request):
             return render(request, "after_access.html",{"num":num})
 
         else:
-            messages.info(request,"invalid credentials! Please double-check and try again.")
+            messages.info(request,"invalid credentials! Please enw-check and try again.")
             return render(request, "after_login.html",{"email":email})
     else:
         return render(request, "after_login.html",{"email":email})
-
-
 
 
 

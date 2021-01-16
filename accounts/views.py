@@ -394,7 +394,7 @@ def addPackage(request):
                     
                     #open the box to enter the package and wait untill it's closed 
                     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    s.connect(("136.244.194.178", 8000))
+                    s.connect(("136.244.194.179", 8000))
                     s.send(bytes(str(boxNum),"utf-8"))
                     msg = s.recv(1024).decode("utf-8")
                                                                          
@@ -460,7 +460,7 @@ def addPackage(request):
                     
                     #open the box to enter the package and wait untill it's closed 
                     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    s.connect(("136.244.194.178", 8000))
+                    s.connect(("136.244.194.179", 8000))
                     s.send(bytes(str(boxNum),"utf-8"))
                     msg = s.recv(1024).decode("utf-8")
 
@@ -548,7 +548,7 @@ def open_box(request):
             box_num=parcel.box_num
 
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect(("136.244.194.178", 8000))
+            s.connect(("136.244.194.179", 8000))
             s.send(bytes(box_num,"utf-8"))
 
             
